@@ -15,7 +15,7 @@ def menu():
     return input(textwrap.dedent(menu))
 
 
-def depositar(saldo, valor, extrato, /):
+def depositar(saldo, valor, extrato):
     if valor > 0:
         saldo += valor
         extrato += f"Depósito:\tR$ {valor:.2f}\n"
@@ -26,7 +26,7 @@ def depositar(saldo, valor, extrato, /):
     return saldo, extrato
 
 
-def sacar(*, saldo, valor, extrato, limite, numero_saques, limite_saques):
+def sacar(saldo, valor, extrato, limite, numero_saques, limite_saques):
     excedeu_saldo = valor > saldo
     excedeu_limite = valor > limite
     excedeu_saques = numero_saques >= limite_saques
@@ -49,10 +49,10 @@ def sacar(*, saldo, valor, extrato, limite, numero_saques, limite_saques):
     else:
         print("\n@@@ Operação falhou! O valor informado é inválido. @@@")
 
-    return saldo, extrato
+    return saldo, extrato, numero_saques
 
 
-def exibir_extrato(saldo, /, *, extrato):
+def exibir_extrato(saldo, extrato):
     print("\n================ EXTRATO ================")
     print("Não foram realizadas movimentações." if not extrato else extrato)
     print(f"\nSaldo:\t\tR$ {saldo:.2f}")
@@ -86,10 +86,29 @@ def criar_conta(agencia, numero_conta, usuarios):
     usuario = filtrar_usuario(cpf, usuarios)
 
     if usuario:
-        print("\n=== Conta criada com sucesso! ===")
-        return {"agencia": agencia, "numero_conta": numero_conta, "usuario": usuario}
+        saldo_inicial = float(input("Informe o saldo inicial da conta: "))
 
-    print("\n@@@ Usuário não encontrado, fluxo de criação de conta encerrado! @@@")
+        # Determinando o tipo de conta com base no saldo inicial
+        if saldo_inicial >= 100000:
+            tipo_conta = "Premium"
+        elif saldo_inicial >= 10000:
+            tipo_conta = "Black"
+        else:
+            tipo_conta = "Normal"
+
+        conta = {
+            "agencia": agencia,
+            "numero_conta": numero_conta,
+            "usuario": usuario,
+            "saldo": saldo_inicial,
+            "tipo_conta": tipo_conta,
+        }
+
+        print("\n=== Conta criada com sucesso! ===")
+        return conta
+
+    else:
+        print("\n@@@ Usuário não encontrado, fluxo de criação de conta encerrado! @@@")
 
 
 def listar_contas(contas):
@@ -98,6 +117,8 @@ def listar_contas(contas):
             Agência:\t{conta['agencia']}
             C/C:\t\t{conta['numero_conta']}
             Titular:\t{conta['usuario']['nome']}
+            Saldo:\t\tR$ {conta['saldo']:.2f}
+            Tipo:\t\t{conta['tipo_conta']}
         """
         print("=" * 100)
         print(textwrap.dedent(linha))
@@ -107,8 +128,6 @@ def main():
     LIMITE_SAQUES = 3
     AGENCIA = "0001"
 
-    saldo = 0
-    limite = 500
     extrato = ""
     numero_saques = 0
     usuarios = []
@@ -119,23 +138,21 @@ def main():
 
         if opcao == "d":
             valor = float(input("Informe o valor do depósito: "))
-
             saldo, extrato = depositar(saldo, valor, extrato)
 
         elif opcao == "s":
             valor = float(input("Informe o valor do saque: "))
-
-            saldo, extrato = sacar(
+            saldo, extrato, numero_saques = sacar(
                 saldo=saldo,
                 valor=valor,
                 extrato=extrato,
-                limite=limite,
+                limite=500,  # Limite de saque fixo de 500 por exemplo
                 numero_saques=numero_saques,
                 limite_saques=LIMITE_SAQUES,
             )
 
         elif opcao == "e":
-            exibir_extrato(saldo, extrato=extrato)
+            exibir_extrato(saldo, extrato)
 
         elif opcao == "nu":
             criar_usuario(usuarios)
@@ -157,4 +174,5 @@ def main():
             print("Operação inválida, por favor selecione novamente a operação desejada.")
 
 
-main()
+if __name__ == "__main__":
+    main()
